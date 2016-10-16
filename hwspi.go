@@ -51,7 +51,30 @@ func (spi *HWspi) Init(ClkPin, DataPin string, ClkFactor time.Duration) (*HWspi,
 //GpioWriteBuffer - writes a buffer to spi
 func (spi *HWspi) GpioWriteBuffer(bytes []byte) {
 	for _, b := range bytes {
-		spi.gpioWrite(b)
+		spi.GpioWrite(b)
+	}
+}
+
+//GpioWrite - writes a byte to spi
+func (spi *HWspi) GpioWrite(b byte) {
+	var i uint
+	for i = 0; i < 8; i++ {
+		if b&(1<<i) != 0 {
+			spi.GpioWriteBit(true)
+		} else {
+			spi.GpioWriteBit(false)
+		}
+	}
+}
+
+//GpioWriteBit sends a single bit over SPI
+func (spi *HWspi) GpioWriteBit(b bool) {
+	if b == true {
+		spi.DataOut.Write(embd.High)
+		spi.gpioSynchronize()
+	} else {
+		spi.DataOut.Write(embd.Low)
+		spi.gpioSynchronize()
 	}
 }
 
@@ -65,27 +88,5 @@ func (spi *HWspi) gpioSynchronize() {
 	err = spi.ClkOut.Write(embd.Low)
 	if err != nil {
 		fmt.Println(err)
-	}
-}
-
-func (spi *HWspi) gpioWrite(b byte) {
-	var i uint
-	for i = 0; i < 8; i++ {
-		if b&(1<<i) != 0 {
-			spi.gpioWriteBit(true)
-		} else {
-			spi.gpioWriteBit(false)
-		}
-	}
-}
-
-//WriteBit sends a single bit over SPI
-func (spi *HWspi) gpioWriteBit(b bool) {
-	if b == true {
-		spi.DataOut.Write(embd.High)
-		spi.gpioSynchronize()
-	} else {
-		spi.DataOut.Write(embd.Low)
-		spi.gpioSynchronize()
 	}
 }
