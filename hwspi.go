@@ -96,7 +96,7 @@ func (spi *HWspi) gpioSynchronize() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	time.Sleep(time.Nanosecond * spi.ClkFactor)
+	// time.Sleep(time.Nanosecond) not needed!
 	err = spi.ClkOut.Write(embd.Low)
 	if err != nil {
 		fmt.Println(err)
