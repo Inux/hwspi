@@ -2,10 +2,15 @@ package hwspi
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/rpi" // This loads the RPi driver
+)
+
+var (
+	lock sync.Mutex
 )
 
 //HWspi is a driver for HWspi led strips
@@ -19,9 +24,11 @@ type HWspi struct {
 
 //Init Creates a New HWspi driver based on embd package
 func (spi *HWspi) Init(ClkPin, DataPin string, ClkFactor time.Duration) (*HWspi, error) {
+	lock.Lock()
+
 	spi.ClkPin = ClkPin
 	spi.DataPin = DataPin
-	if ClkFactor < 1 || ClkFactor > 1000 {
+	if ClkFactor < 1 || ClkFactor > 10000 {
 		spi.ClkFactor = 1
 	} else {
 		spi.ClkFactor = ClkFactor
@@ -45,6 +52,7 @@ func (spi *HWspi) Init(ClkPin, DataPin string, ClkFactor time.Duration) (*HWspi,
 	spi.ClkOut.Write(embd.Low)
 	spi.DataOut.Write(embd.Low)
 
+	lock.Unlock()
 	return spi, nil
 }
 
@@ -69,6 +77,8 @@ func (spi *HWspi) GpioWrite(b byte) {
 
 //GpioWriteBit sends a single bit over SPI
 func (spi *HWspi) GpioWriteBit(b bool) {
+	lock.Lock()
+
 	if b == true {
 		spi.DataOut.Write(embd.High)
 		spi.gpioSynchronize()
@@ -76,6 +86,8 @@ func (spi *HWspi) GpioWriteBit(b bool) {
 		spi.DataOut.Write(embd.Low)
 		spi.gpioSynchronize()
 	}
+
+	lock.Unlock()
 }
 
 //Synchronize used to fake SPI
@@ -84,7 +96,7 @@ func (spi *HWspi) gpioSynchronize() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	time.Sleep(time.Microsecond * spi.ClkFactor)
+	time.Sleep(time.Nanosecond * spi.ClkFactor)
 	err = spi.ClkOut.Write(embd.Low)
 	if err != nil {
 		fmt.Println(err)
